@@ -53,6 +53,28 @@ services:
     networks:
       - app-network
 
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: cactus-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: dynamodb
+      DEBUG: 0
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: localstack
+      AWS_SECRET_ACCESS_KEY: localstack
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./docker/localstack/init-dynamodb.sh:/etc/localstack/init/ready.d/init-dynamodb.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal dynamodb list-tables"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: cactus-zookeeper
@@ -166,6 +188,7 @@ volumes:
   postgres_data:
   mongodb_data:
   redis_data:
+  localstack_data:
   rabbitmq_data:
   prometheus_data:
   grafana_data:

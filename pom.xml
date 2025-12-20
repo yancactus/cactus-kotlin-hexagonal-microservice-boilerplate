@@ -34,6 +34,7 @@
         <awaitility.version>4.2.2</awaitility.version>
         <shedlock.version>5.16.0</shedlock.version>
         <openfeign.version>4.2.0</openfeign.version>
+        <aws-sdk.version>2.25.70</aws-sdk.version>
     </properties>
 
     <dependencies>
@@ -135,6 +136,13 @@
             <version>${openfeign.version}</version>
         </dependency>
 
+        <!-- AWS DynamoDB -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>dynamodb-enhanced</artifactId>
+            <version>${aws-sdk.version}</version>
+        </dependency>
+
         <!-- Database -->
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -233,6 +241,11 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>rabbitmq</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>localstack</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -9,6 +9,7 @@ import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.RabbitMQContainer
+import org.testcontainers.containers.localstack.LocalStackContainer
 import org.testcontainers.utility.DockerImageName
 
 @TestConfiguration
@@ -44,10 +45,22 @@ class IntegrationTestConfig {
             .apply { start() }
 
         @JvmStatic
+        val localstack: LocalStackContainer = LocalStackContainer(DockerImageName.parse("localstack/localstack:3.0"))
+            .withServices(LocalStackContainer.Service.DYNAMODB)
+            .apply { start() }
+
+        @JvmStatic
         @DynamicPropertySource
         fun registerProperties(registry: DynamicPropertyRegistry) {
             registry.add("spring.data.redis.host") { redis.host }
             registry.add("spring.data.redis.port") { redis.getMappedPort(6379) }
+
+            // DynamoDB configuration
+            registry.add("aws.dynamodb.endpoint") { localstack.getEndpointOverride(LocalStackContainer.Service.DYNAMODB).toString() }
+            registry.add("aws.dynamodb.region") { localstack.region }
+            registry.add("aws.dynamodb.access-key") { localstack.accessKey }
+            registry.add("aws.dynamodb.secret-key") { localstack.secretKey }
+            registry.add("aws.dynamodb.create-tables") { "true" }
         }
     }
 }

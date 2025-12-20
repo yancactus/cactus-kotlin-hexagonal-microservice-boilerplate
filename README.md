@@ -40,6 +40,7 @@ A Arquitetura Hexagonal (também conhecida como Ports and Adapters) isola a lóg
 | Framework | Spring Boot | 3.4.1 |
 | Banco Relacional | PostgreSQL | 16 |
 | Banco NoSQL | MongoDB | 7.0 |
+| Auditoria | AWS DynamoDB | Local |
 | Cache | Redis + Lettuce | 7 |
 | Lock Distribuído | Redisson | 3.40.2 |
 | Mensageria | Apache Kafka | 3.6 |
@@ -120,8 +121,9 @@ src/main/kotlin/br/com/cactus/
 │   │   ├── consumer/                        # Consumers de mensagens
 │   │   │   ├── kafka/
 │   │   │   │   └── DomainEventConsumer.kt   # Processa eventos Kafka
-│   │   │   └── rabbitmq/
-│   │   │       └── RabbitMQEventConsumer.kt # Processa eventos RabbitMQ
+│   │   │   ├── rabbitmq/
+│   │   │   │   └── RabbitMQEventConsumer.kt # Processa eventos RabbitMQ
+│   │   │   └── AuditEventListener.kt        # Captura eventos para auditoria
 │   │   │
 │   │   └── scheduler/                       # Jobs agendados
 │   │       └── OrderExpirationScheduler.kt  # Cancela pedidos expirados (ShedLock)
@@ -141,14 +143,21 @@ src/main/kotlin/br/com/cactus/
 │       │   │   ├── UserRepositoryAdapter.kt # Implementa UserRepository port
 │       │   │   └── OrderRepositoryAdapter.kt
 │       │   │
-│       │   └── mongodb/                     # MongoDB
-│       │       ├── document/                # Documentos MongoDB
-│       │       │   └── ProductDocument.kt
-│       │       ├── repository/              # Spring Data MongoDB Repositories
-│       │       │   └── MongoProductRepository.kt
-│       │       ├── mapper/                  # Mapeadores Document <-> Domain
-│       │       │   └── MongoMappers.kt
-│       │       └── ProductRepositoryAdapter.kt
+│       │   ├── mongodb/                     # MongoDB
+│       │   │   ├── document/                # Documentos MongoDB
+│       │   │   │   └── ProductDocument.kt
+│       │   │   ├── repository/              # Spring Data MongoDB Repositories
+│       │   │   │   └── MongoProductRepository.kt
+│       │   │   ├── mapper/                  # Mapeadores Document <-> Domain
+│       │   │   │   └── MongoMappers.kt
+│       │   │   └── ProductRepositoryAdapter.kt
+│       │   │
+│       │   └── dynamodb/                    # AWS DynamoDB (Auditoria)
+│       │       ├── entity/
+│       │       │   └── AuditLogItem.kt      # @DynamoDbBean
+│       │       ├── mapper/
+│       │       │   └── DynamoDbMappers.kt   # toDomain() / toItem()
+│       │       └── AuditLogRepositoryAdapter.kt
 │       │
 │       ├── messaging/                       # Mensageria
 │       │   ├── kafka/
@@ -169,6 +178,7 @@ src/main/kotlin/br/com/cactus/
     ├── KafkaConfig.kt                       # Producer/Consumer Kafka
     ├── RabbitMQConfig.kt                    # Exchanges, Queues, Bindings
     ├── RedisConfig.kt                       # Lettuce, Pool, Cluster support
+    ├── DynamoDbConfig.kt                    # AWS DynamoDB client
     ├── ShedLockConfig.kt                    # Distributed scheduling
     ├── FeignConfig.kt                       # HTTP clients externos
     ├── WebMvcConfig.kt                      # Interceptors, CORS
@@ -341,6 +351,53 @@ Todas as strings hardcoded estão centralizadas em `core/config/CoreConstants.kt
 - `HttpHeaders`: Headers HTTP customizados
 - `StockUpdateReason`: Enum com razões de atualização de estoque
 
+### 10. Auditoria com DynamoDB
+
+O sistema de auditoria registra automaticamente todas as ações do sistema usando AWS DynamoDB:
+
+```kotlin
+// Entidade de domínio
+data class AuditLog(
+    val id: String,
+    val entityType: EntityType,  // USER, PRODUCT, ORDER
+    val entityId: String,
+    val action: AuditAction,     // CREATE, UPDATE, DELETE
+    val userId: String?,
+    val oldValue: String?,       // JSON do estado anterior
+    val newValue: String?,       // JSON do novo estado
+    val timestamp: Instant,
+    val metadata: Map<String, String>
+)
+```
+
+**Estrutura DynamoDB:**
+- **Partition Key**: `entityType` (USER, PRODUCT, ORDER)
+- **Sort Key**: `timestamp#id` (ordenação temporal)
+- **GSI**: `entityId-index` (busca por entidade específica)
+
+**Captura automática de eventos:**
+```kotlin
+@Component
+class AuditEventListener(
+    private val auditLogRepository: AuditLogRepository
+) {
+    @Async
+    @EventListener
+    fun handleUserCreatedEvent(event: UserCreatedEvent) {
+        // Salva automaticamente no DynamoDB
+    }
+}
+```
+
+**Endpoints de consulta:**
+```bash
+# Buscar por tipo de entidade e período
+curl "http://localhost:8080/api/v1/audit-logs/entity-type/USER?startTime=2025-01-01T00:00:00&endTime=2025-12-31T23:59:59"
+
+# Buscar histórico de uma entidade específica
+curl http://localhost:8080/api/v1/audit-logs/entity/550e8400-e29b-41d4-a716-446655440000
+```
+
 ---
 
 ## Como Executar
@@ -382,6 +439,7 @@ mvn spring-boot:run
 |---------|-----|
 | API | http://localhost:8080 |
 | Swagger UI | http://localhost:8080/swagger-ui.html |
+| DynamoDB Admin | http://localhost:8001 |
 | Kafka UI | http://localhost:8090 |
 | RabbitMQ | http://localhost:15672 (guest/guest) |
 | Jaeger | http://localhost:16686 |
@@ -398,7 +456,7 @@ mvn spring-boot:run
 # Criar
 curl -X POST http://localhost:8080/api/v1/users \
   -H "Content-Type: application/json" \
-  -d '{"name": "João", "email": "joao@example.com"}'
+  -d '{"name": "João3", "email": "joao3@example.com"}'
 
 # Buscar
 curl http://localhost:8080/api/v1/users/{id}
@@ -413,10 +471,10 @@ curl "http://localhost:8080/api/v1/users?page=0&size=10"
 # Criar
 curl -X POST http://localhost:8080/api/v1/products \
   -H "Content-Type: application/json" \
-  -d '{"sku": "PROD-001", "name": "Camiseta", "price": 59.90, "initialStock": 100}'
+  -d '{"sku": "PROD-0001", "name": "Camiseta Longa", "price": 59.90, "initialStock": 100}'
 
 # Reservar estoque
-curl -X POST http://localhost:8080/api/v1/products/{id}/stock/reserve \
+curl -X POST http://localhost:8080/api/v1/products/3a94da44-452d-4683-96af-5dc1a9645492/stock/reserve \
   -H "Content-Type: application/json" \
   -d '{"quantity": 5, "reason": "Pedido #123"}'
 ```
@@ -426,13 +484,13 @@ curl -X POST http://localhost:8080/api/v1/products/{id}/stock/reserve \
 ```bash
 # Criar pedido
 curl -X POST http://localhost:8080/api/v1/orders \
-  -H "X-User-Id: {userId}" \
+  -H "X-User-Id: 18933022-084f-417e-be3a-69d75beda4ea" \
   -H "Content-Type: application/json" \
-  -d '{"userId": "{userId}", "items": [{"productId": "{productId}", "quantity": 2}]}'
+  -d '{"userId": "18933022-084f-417e-be3a-69d75beda4ea", "items": [{"productId": "3a94da44-452d-4683-96af-5dc1a9645492", "quantity": 2}]}'
 
 # Confirmar
-curl -X POST http://localhost:8080/api/v1/orders/{id}/confirm \
-  -H "X-User-Id: {userId}"
+curl -X POST http://localhost:8080/api/v1/orders/a68f6500-ad71-49c9-bef0-b194a9023e38/confirm \
+  -H "X-User-Id: 18933022-084f-417e-be3a-69d75beda4ea"
 
 # Cancelar
 curl -X POST http://localhost:8080/api/v1/orders/{id}/cancel \
@@ -462,6 +520,10 @@ curl http://localhost:8080/api/v1/addresses/cep/01310100/validate
 | `REDIS_HOST` | Host Redis | localhost |
 | `KAFKA_BOOTSTRAP_SERVERS` | Servidores Kafka | localhost:9092 |
 | `RABBITMQ_HOST` | Host RabbitMQ | localhost |
+| `AWS_DYNAMODB_ENDPOINT` | Endpoint DynamoDB | http://localhost:8000 |
+| `AWS_REGION` | Região AWS | us-east-1 |
+| `AWS_ACCESS_KEY` | Access Key AWS | local |
+| `AWS_SECRET_KEY` | Secret Key AWS | local |
 | `BRASIL_API_URL` | URL da Brasil API | https://brasilapi.com.br/api |
 | `ORDER_EXPIRATION_PENDING_HOURS` | Horas para expirar pedido | 24 |
 

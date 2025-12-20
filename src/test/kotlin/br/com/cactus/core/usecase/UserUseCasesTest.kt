@@ -10,11 +10,13 @@ import br.com.cactus.core.ports.output.EventPublisher
 import br.com.cactus.core.ports.output.UserRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
+import org.springframework.context.ApplicationEventPublisher
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -29,12 +31,14 @@ class UserUseCasesTest {
     private lateinit var userRepository: UserRepository
     private lateinit var cachePort: CachePort
     private lateinit var eventPublisher: EventPublisher
+    private lateinit var applicationEventPublisher: ApplicationEventPublisher
 
     @BeforeEach
     fun setup() {
         userRepository = mockk()
         cachePort = mockk()
         eventPublisher = mockk()
+        applicationEventPublisher = mockk(relaxed = true)
     }
 
     @Nested
@@ -43,7 +47,7 @@ class UserUseCasesTest {
 
         @BeforeEach
         fun setup() {
-            useCase = CreateUserUseCaseImpl(userRepository, eventPublisher, cachePort)
+            useCase = CreateUserUseCaseImpl(userRepository, eventPublisher, cachePort, applicationEventPublisher)
         }
 
         @Test

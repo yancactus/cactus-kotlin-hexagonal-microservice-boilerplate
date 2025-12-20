@@ -103,6 +103,14 @@ feign:
     brasil-api:
       url: ${BRASIL_API_URL:https://brasilapi.com.br/api}
 
+aws:
+  dynamodb:
+    endpoint: ${AWS_DYNAMODB_ENDPOINT:http://localhost:4566}
+    region: ${AWS_REGION:us-east-1}
+    access-key: ${AWS_ACCESS_KEY:localstack}
+    secret-key: ${AWS_SECRET_KEY:localstack}
+    create-tables: ${AWS_DYNAMODB_CREATE_TABLES:true}
+
 order:
   expiration:
     enabled: ${ORDER_EXPIRATION_ENABLED:true}
