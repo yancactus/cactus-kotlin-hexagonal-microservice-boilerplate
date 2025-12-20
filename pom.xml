@@ -35,6 +35,7 @@
         <shedlock.version>5.16.0</shedlock.version>
         <openfeign.version>4.2.0</openfeign.version>
         <aws-sdk.version>2.25.70</aws-sdk.version>
+        <detekt.version>1.23.7</detekt.version>
     </properties>
 
     <dependencies>
@@ -273,7 +274,7 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <configuration>
-                    <jvmTarget>23</jvmTarget>
+                    <jvmTarget>${kotlin.compiler.jvmTarget}</jvmTarget>
                     <args>
                         <arg>-Xjsr305=strict</arg>
                     </args>
@@ -304,6 +305,29 @@
                         <version>${kotlin.version}</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>com.github.ozsie</groupId>
+                <artifactId>detekt-maven-plugin</artifactId>
+                <version>${detekt.version}</version>
+                <configuration>
+                    <config>detekt.yml</config>
+                    <buildUponDefaultConfig>true</buildUponDefaultConfig>
+                    <allRules>false</allRules>
+                    <input>${project.basedir}/src/main/kotlin</input>
+                    <report>
+                        <report>html:${project.build.directory}/detekt/detekt.html</report>
+                        <report>xml:${project.build.directory}/detekt/detekt.xml</report>
+                    </report>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

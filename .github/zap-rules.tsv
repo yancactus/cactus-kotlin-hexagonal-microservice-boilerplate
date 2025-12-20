@@ -1,0 +1,70 @@
+# ZAP Baseline Scan Rules Configuration
+# Format: <rule-id>	<action>	<description>
+# Actions: IGNORE, WARN, FAIL
+
+# Informational rules - IGNORE
+10003	IGNORE	Vulnerable JS Library (informational)
+10015	IGNORE	Re-examine Cache-control Directives
+10020	IGNORE	X-Frame-Options Header Not Set
+10021	IGNORE	X-Content-Type-Options Header Missing
+10036	IGNORE	Server Leaks Version Information
+10037	IGNORE	Server Leaks Information via "X-Powered-By"
+10038	IGNORE	Content Security Policy (CSP) Header Not Set
+10054	IGNORE	Cookie without SameSite Attribute
+10055	IGNORE	CSP: Wildcard Directive
+10063	IGNORE	Permissions Policy Header Not Set
+10096	IGNORE	Timestamp Disclosure - Unix
+10097	IGNORE	Hash Disclosure - MD5
+10098	IGNORE	Cross-Domain Misconfiguration
+
+# Low severity - WARN
+10009	WARN	In Page Banner Information Leak
+10010	WARN	Cookie No HttpOnly Flag
+10011	WARN	Cookie Without Secure Flag
+10017	WARN	Cross-Domain JavaScript Source File Inclusion
+10019	WARN	Content-Type Header Missing
+10024	WARN	Information Disclosure - Sensitive Information in URL
+10027	WARN	Information Disclosure - Suspicious Comments
+10040	WARN	Secure Pages Include Mixed Content
+10049	WARN	Storable and Cacheable Content
+10050	WARN	Retrieved from Cache
+10052	WARN	X-ChromeLogger-Data Header Information Leak
+10057	WARN	Username Hash Found
+
+# Medium severity - WARN (review needed)
+10012	WARN	Password Autocomplete in Browser
+10016	WARN	Web Browser XSS Protection Not Enabled
+10023	WARN	Information Disclosure - Debug Error Messages
+10035	WARN	Strict-Transport-Security Header Not Set
+10202	WARN	Absence of Anti-CSRF Tokens
+
+# High severity - FAIL
+10016	FAIL	SQL Injection
+10017	FAIL	Cross Site Scripting (Reflected)
+10018	FAIL	Cross Site Scripting (Persistent)
+10020	FAIL	External Redirect
+10021	FAIL	Remote Code Execution
+10032	FAIL	Viewstate without MAC Signature
+40003	FAIL	CRLF Injection
+40008	FAIL	Parameter Tampering
+40009	FAIL	Server Side Include
+40012	FAIL	Cross Site Scripting (Reflected)
+40014	FAIL	Cross Site Scripting (Persistent)
+40016	FAIL	Cross Site Scripting (Persistent) - Prime
+40017	FAIL	Cross Site Scripting (Persistent) - Spider
+40018	FAIL	SQL Injection
+40019	FAIL	SQL Injection - MySQL
+40020	FAIL	SQL Injection - Hypersonic SQL
+40021	FAIL	SQL Injection - Oracle
+40022	FAIL	SQL Injection - PostgreSQL
+40024	FAIL	SQL Injection - SQLite
+90019	FAIL	Server Side Code Injection
+90020	FAIL	Remote OS Command Injection
+90021	FAIL	XPath Injection
+90023	FAIL	XML External Entity Attack
+90024	FAIL	Generic Padding Oracle
+90025	FAIL	Expression Language Injection
+90028	FAIL	Insecure HTTP Method
+90029	FAIL	SOAP XML Injection
+90030	FAIL	WSDL File Detection
+90033	FAIL	Loosely Scoped Cookie

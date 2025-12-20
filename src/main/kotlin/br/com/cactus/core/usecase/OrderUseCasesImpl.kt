@@ -28,22 +28,18 @@ class CreateOrderUseCaseImpl(
     override suspend fun execute(command: CreateOrderCommand): Order = coroutineScope {
         logger.info("Creating order for user: ${command.userId}")
 
-        // Verify user exists
         userRepository.findById(command.userId)
             ?: throw EntityNotFoundException("User", command.userId)
 
-        // Fetch all products concurrently
         val productIds = command.items.map { it.productId }
         val products = productRepository.findByIds(productIds)
             .associateBy { it.id }
 
-        // Validate all products exist
         val missingProducts = productIds.filter { it !in products.keys }
         if (missingProducts.isNotEmpty()) {
             throw EntityNotFoundException("Products", missingProducts.joinToString())
         }
 
-        // Build order items
         val orderItems = command.items.map { item ->
             val product = products[item.productId]!!
             OrderItem(
@@ -61,7 +57,6 @@ class CreateOrderUseCaseImpl(
 
         val savedOrder = orderRepository.save(order)
 
-        // Publish event asynchronously
         launch {
             eventPublisher.publish(
                 OrderCreatedEvent(

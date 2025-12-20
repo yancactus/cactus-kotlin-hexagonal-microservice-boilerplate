@@ -16,8 +16,6 @@ import org.springframework.stereotype.Component
 class RabbitMQEventPublisherAdapter(
     private val rabbitTemplate: RabbitTemplate,
     private val objectMapper: ObjectMapper,
-    @Value("\${rabbitmq.exchange.domain-events:domain-events-exchange}")
-    private val defaultExchange: String,
     @Value("\${rabbitmq.queue.domain-events:domain-events-queue}")
     private val defaultQueue: String
 ) : RabbitMQEventPublisher {

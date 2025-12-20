@@ -77,7 +77,7 @@ class ProductUseCasesTest {
 
         @BeforeEach
         fun setup() {
-            useCase = CreateProductUseCaseImpl(productRepository, cachePort)
+            useCase = CreateProductUseCaseImpl(productRepository, cachePort, eventPublisher)
         }
 
         @Test
@@ -102,6 +102,7 @@ class ProductUseCasesTest {
             coEvery { productRepository.existsBySku(command.sku) } returns false
             coEvery { productRepository.save(any()) } returns savedProduct
             coEvery { cachePort.set(any(), any(), any()) } just runs
+            coEvery { eventPublisher.publish(any()) } just runs
 
             val result = useCase.execute(command)
 

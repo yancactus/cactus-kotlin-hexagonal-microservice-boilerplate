@@ -5,6 +5,7 @@ import br.com.cactus.core.config.CacheTtl
 import br.com.cactus.core.config.LockConfig
 import br.com.cactus.core.config.OptimisticLockConfig
 import br.com.cactus.core.domain.Product
+import br.com.cactus.core.domain.ProductCreatedEvent
 import br.com.cactus.core.domain.ProductStockUpdatedEvent
 import br.com.cactus.core.exception.ConcurrencyException
 import br.com.cactus.core.exception.DuplicateEntityException
@@ -23,7 +24,8 @@ import kotlin.time.Duration.Companion.milliseconds
 @Service
 class CreateProductUseCaseImpl(
     private val productRepository: ProductRepository,
-    private val cachePort: CachePort
+    private val cachePort: CachePort,
+    private val eventPublisher: EventPublisher
 ) : CreateProductUseCase {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -47,6 +49,18 @@ class CreateProductUseCaseImpl(
 
         launch {
             cachePort.set(CacheKeys.product(savedProduct.id), savedProduct, CacheTtl.PRODUCT)
+        }
+
+        launch {
+            eventPublisher.publish(
+                ProductCreatedEvent(
+                    productId = savedProduct.id,
+                    sku = savedProduct.sku,
+                    name = savedProduct.name,
+                    price = savedProduct.price,
+                    stock = savedProduct.stock
+                )
+            )
         }
 
         logger.info("Product created: ${savedProduct.id}")
@@ -155,6 +169,7 @@ class ReserveStockUseCaseImpl(
             launch {
                 cachePort.set(CacheKeys.product(savedProduct.id), savedProduct, CacheTtl.PRODUCT)
             }
+
             launch {
                 eventPublisher.publish(
                     ProductStockUpdatedEvent(
@@ -200,6 +215,7 @@ class RestoreStockUseCaseImpl(
             launch {
                 cachePort.set(CacheKeys.product(savedProduct.id), savedProduct, CacheTtl.PRODUCT)
             }
+
             launch {
                 eventPublisher.publish(
                     ProductStockUpdatedEvent(
@@ -248,6 +264,7 @@ class UpdateStockWithLockUseCaseImpl(
                 launch {
                     cachePort.set(CacheKeys.product(result!!.id), result!!, CacheTtl.PRODUCT)
                 }
+
                 launch {
                     eventPublisher.publish(
                         ProductStockUpdatedEvent(

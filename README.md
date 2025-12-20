@@ -13,6 +13,9 @@ Este projeto demonstra CRUD completo de Usuários, Produtos/Estoque e Pedidos, u
 6. [API Reference](#api-reference)
 7. [Configurações](#configurações)
 8. [Guia de Desenvolvimento](#guia-de-desenvolvimento)
+   - [Testes](#testes)
+   - [Qualidade de Código](#qualidade-de-código)
+   - [CI/CD Pipeline](#cicd-pipeline)
 
 ---
 
@@ -53,6 +56,8 @@ A Arquitetura Hexagonal (também conhecida como Ports and Adapters) isola a lóg
 | API Docs | SpringDoc OpenAPI | 2.7 |
 | Testes | JUnit 5, MockK, Testcontainers | - |
 | Concorrência | Kotlin Coroutines | 1.9.0 |
+| Qualidade | Detekt (análise estática) | 1.23.7 |
+| Arquitetura | Konsist (testes arquiteturais) | 0.17.3 |
 
 ---
 
@@ -584,6 +589,187 @@ src/test/kotlin/br/com/cactus/
 │   └── ProductApiIntegrationTest.kt
 └── architecture/                    # Testes de arquitetura
     └── ArchitectureTest.kt
+```
+
+### Qualidade de Código
+
+O projeto utiliza duas ferramentas para garantir qualidade e consistência do código:
+
+#### Detekt (Análise Estática)
+
+[Detekt](https://detekt.dev/) é uma ferramenta de análise estática para Kotlin que identifica code smells, complexidade excessiva e violações de estilo.
+
+```bash
+# Executar análise Detekt
+mvn detekt:check
+
+# Relatório HTML gerado em: target/detekt/detekt.html
+```
+
+**Configuração personalizada (`detekt.yml`):**
+
+| Regra | Configuração | Descrição |
+|-------|--------------|-----------|
+| `MaxLineLength` | 160 | Comprimento máximo de linha |
+| `LongParameterList` | 10 (constructor) | Máximo de parâmetros em construtores |
+| `CognitiveComplexMethod` | 20 | Threshold de complexidade cognitiva |
+| `ReturnCount` | 5 | Máximo de returns por função |
+| `ThrowsCount` | 5 | Máximo de throws por função |
+| `WildcardImport` | desabilitado | Wildcard imports permitidos |
+| `MagicNumber` | desabilitado | Magic numbers permitidos |
+
+**Exclusões configuradas:**
+- Adaptadores outbound: Exceções genéricas permitidas (integração com sistemas externos)
+- Configs e Interceptors: Swallowed exceptions permitidas para tratamento graceful
+
+#### Konsist (Testes de Arquitetura)
+
+[Konsist](https://docs.konsist.lemonappdev.com/) valida regras arquiteturais através de testes automatizados:
+
+```kotlin
+// Exemplo de teste Konsist
+class ArchitectureTest {
+    @Test
+    fun `core should not depend on adapters`() {
+        Konsist.scopeFromProject()
+            .classes()
+            .withPackage("..core..")
+            .assertFalse { it.hasImport { import -> import.hasNameContaining("adapter") } }
+    }
+}
+```
+
+```bash
+# Executar testes de arquitetura
+mvn test -Dtest="*ArchitectureTest"
+```
+
+**Regras validadas:**
+- Core não importa de Adapters
+- Use Cases implementam interfaces de Input Ports
+- Repositories implementam interfaces de Output Ports
+- Entidades de domínio não dependem de frameworks
+
+#### Executando Todas as Verificações
+
+```bash
+# Compilar, testar e verificar qualidade
+mvn verify
+
+# Detekt roda automaticamente na fase verify
+```
+
+### CI/CD Pipeline
+
+O projeto inclui um pipeline completo de CI/CD com GitHub Actions (`.github/workflows/ci.yaml`).
+
+#### Jobs do Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CI/CD Pipeline                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────┐  ┌──────────────┐  ┌──────────────────┐           │
+│  │  Build  │  │ Code Quality │  │ Architecture     │           │
+│  │  Test   │  │   (Detekt)   │  │ Tests (Konsist)  │           │
+│  └────┬────┘  └──────┬───────┘  └────────┬─────────┘           │
+│       │              │                   │                      │
+│       └──────────────┼───────────────────┘                      │
+│                      │                                          │
+│  ┌───────────────────┴───────────────────┐                      │
+│  │                SAST                   │                      │
+│  │  • Semgrep (Kotlin/Java/OWASP)        │                      │
+│  │  • Trivy (Vulnerabilities)            │                      │
+│  │  • OWASP Dependency Check             │                      │
+│  └───────────────────┬───────────────────┘                      │
+│                      │                                          │
+│  ┌───────────────────┴───────────────────┐                      │
+│  │           Secret Scanning             │                      │
+│  │  • TruffleHog                         │                      │
+│  │  • Gitleaks                           │                      │
+│  └───────────────────┬───────────────────┘                      │
+│                      │                                          │
+│                      ▼                                          │
+│  ┌───────────────────────────────────────┐                      │
+│  │           Docker Build                │  (main branch only)  │
+│  │  • Build image                        │                      │
+│  │  • Trivy image scan                   │                      │
+│  │  • Push disabled (uncomment to enable)│                      │
+│  └───────────────────┬───────────────────┘                      │
+│                      │                                          │
+│                      ▼                                          │
+│  ┌───────────────────────────────────────┐                      │
+│  │              DAST                     │  (main branch only)  │
+│  │  • OWASP ZAP Baseline Scan            │                      │
+│  └───────────────────────────────────────┘                      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Ferramentas de Segurança
+
+| Ferramenta | Tipo | Descrição |
+|------------|------|-----------|
+| **Semgrep** | SAST | Análise estática para Kotlin/Java, OWASP Top 10 |
+| **Trivy** | SAST/SCA | Scanner de vulnerabilidades em código, dependências e imagens |
+| **TruffleHog** | Secret Scan | Detecta secrets e credenciais no código |
+| **Gitleaks** | Secret Scan | Scanner de secrets em commits Git |
+| **OWASP ZAP** | DAST | Teste dinâmico de segurança na aplicação em execução |
+
+#### Triggers
+
+| Evento | Jobs Executados |
+|--------|-----------------|
+| Push para `main` | Build, Test, SAST, Docker, DAST, Integration Tests |
+| Push para `develop` | Build, Test, SAST, Integration Tests |
+| Pull Request | Build, Test, SAST, Integration Tests |
+
+#### Testcontainers no GitHub Actions
+
+Os testes de integração usam **Testcontainers** que funcionam automaticamente no GitHub Actions porque:
+
+- Runners `ubuntu-latest` já possuem Docker pré-instalado
+- O socket Docker está disponível em `/var/run/docker.sock`
+- Não é necessário configurar Docker-in-Docker (DinD)
+
+**Containers iniciados automaticamente:**
+- PostgreSQL 16
+- MongoDB 7.0
+- Redis 7
+- Kafka (Confluent 7.5.0)
+- RabbitMQ 3.13
+- LocalStack (DynamoDB)
+
+#### Secrets Necessários
+
+Configure os seguintes secrets no GitHub:
+
+| Secret | Obrigatório | Descrição |
+|--------|-------------|-----------|
+| `GITHUB_TOKEN` | Automático | Token padrão do GitHub Actions |
+| `SEMGREP_APP_TOKEN` | Opcional | Token para Semgrep Cloud (relatórios avançados) |
+
+#### Artefatos Gerados
+
+O pipeline gera os seguintes artefatos disponíveis para download:
+
+- `test-results` - Relatórios de testes unitários
+- `coverage-report` - Relatório de cobertura (JaCoCo)
+- `detekt-report` - Relatório do Detekt
+- `zap-report` - Relatório do OWASP ZAP (DAST)
+- `integration-test-results` - Relatórios de testes de integração
+
+#### Executar Pipeline Localmente
+
+```bash
+# Simular jobs do CI localmente
+mvn clean verify                    # Build + Tests + Detekt
+mvn detekt:check                    # Apenas Detekt
+mvn test -Dtest="*ArchitectureTest" # Apenas Konsist
+
+# Docker build
+docker build -t kotlin-boilerplate .
 ```
 
 ---

@@ -2,7 +2,6 @@ package br.com.cactus.core.ports.output
 
 import br.com.cactus.core.domain.Address
 
-
 interface AddressLookupPort {
 
     suspend fun findByCep(cep: String): Address?

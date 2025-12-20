@@ -13,7 +13,6 @@ import br.com.cactus.core.ports.output.UserRepository
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
-import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -21,8 +20,7 @@ import java.util.UUID
 class CreateUserUseCaseImpl(
     private val userRepository: UserRepository,
     private val eventPublisher: EventPublisher,
-    private val cachePort: CachePort,
-    private val applicationEventPublisher: ApplicationEventPublisher
+    private val cachePort: CachePort
 ) : CreateUserUseCase {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -46,12 +44,10 @@ class CreateUserUseCaseImpl(
             cachePort.set(CacheKeys.userExists(savedUser.id), true, CacheTtl.USER_EXISTS)
         }
 
-        val event = UserCreatedEvent(userId = savedUser.id, email = savedUser.email)
-
-        applicationEventPublisher.publishEvent(event)
-
         launch {
-            eventPublisher.publish(event)
+            eventPublisher.publish(
+                UserCreatedEvent(userId = savedUser.id, email = savedUser.email)
+            )
         }
 
         logger.info("User created successfully: ${savedUser.id}")

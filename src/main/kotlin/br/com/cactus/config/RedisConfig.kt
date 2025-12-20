@@ -40,9 +40,6 @@ class RedisConfig(
     @Value("\${spring.data.redis.password:}")
     private val redisPassword: String,
 
-    @Value("\${spring.data.redis.cluster.enabled:false}")
-    private val clusterEnabled: Boolean,
-
     @Value("\${spring.data.redis.cluster.nodes:}")
     private val clusterNodes: List<String>,
 
@@ -51,9 +48,6 @@ class RedisConfig(
 
     @Value("\${spring.data.redis.lettuce.pool.max-active:16}")
     private val maxActive: Int,
-
-    @Value("\${spring.data.redis.lettuce.pool.max-idle:8}")
-    private val maxIdle: Int,
 
     @Value("\${spring.data.redis.lettuce.pool.min-idle:4}")
     private val minIdle: Int,

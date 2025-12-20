@@ -2,65 +2,32 @@ package br.com.cactus.integration
 
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.containers.GenericContainer
+import org.springframework.context.annotation.Bean
 import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.containers.RabbitMQContainer
-import org.testcontainers.containers.localstack.LocalStackContainer
 import org.testcontainers.utility.DockerImageName
 
-@TestConfiguration
+@TestConfiguration(proxyBeanMethods = false)
 class IntegrationTestConfig {
 
-    companion object {
-        @JvmStatic
-        @ServiceConnection
-        val postgres: PostgreSQLContainer<*> = PostgreSQLContainer(DockerImageName.parse("postgres:16"))
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test")
-            .apply { start() }
+    @Bean
+    @ServiceConnection
+    fun postgres(): PostgreSQLContainer<*> = PostgreSQLContainer(DockerImageName.parse("postgres:16"))
+        .withDatabaseName("testdb")
+        .withUsername("test")
+        .withPassword("test")
 
-        @JvmStatic
-        @ServiceConnection
-        val mongodb: MongoDBContainer = MongoDBContainer(DockerImageName.parse("mongo:7.0"))
-            .apply { start() }
+    @Bean
+    @ServiceConnection
+    fun mongodb(): MongoDBContainer = MongoDBContainer(DockerImageName.parse("mongo:7.0"))
 
-        @JvmStatic
-        val redis: GenericContainer<*> = GenericContainer(DockerImageName.parse("redis:7"))
-            .withExposedPorts(6379)
-            .apply { start() }
+    @Bean
+    @ServiceConnection
+    fun kafka(): KafkaContainer = KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
 
-        @JvmStatic
-        @ServiceConnection
-        val kafka: KafkaContainer = KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
-            .apply { start() }
-
-        @JvmStatic
-        @ServiceConnection
-        val rabbitmq: RabbitMQContainer = RabbitMQContainer(DockerImageName.parse("rabbitmq:3.13-management"))
-            .apply { start() }
-
-        @JvmStatic
-        val localstack: LocalStackContainer = LocalStackContainer(DockerImageName.parse("localstack/localstack:3.0"))
-            .withServices(LocalStackContainer.Service.DYNAMODB)
-            .apply { start() }
-
-        @JvmStatic
-        @DynamicPropertySource
-        fun registerProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.data.redis.host") { redis.host }
-            registry.add("spring.data.redis.port") { redis.getMappedPort(6379) }
-
-            // DynamoDB configuration
-            registry.add("aws.dynamodb.endpoint") { localstack.getEndpointOverride(LocalStackContainer.Service.DYNAMODB).toString() }
-            registry.add("aws.dynamodb.region") { localstack.region }
-            registry.add("aws.dynamodb.access-key") { localstack.accessKey }
-            registry.add("aws.dynamodb.secret-key") { localstack.secretKey }
-            registry.add("aws.dynamodb.create-tables") { "true" }
-        }
-    }
+    @Bean
+    @ServiceConnection
+    fun rabbitmq(): RabbitMQContainer = RabbitMQContainer(DockerImageName.parse("rabbitmq:3.13-management"))
 }

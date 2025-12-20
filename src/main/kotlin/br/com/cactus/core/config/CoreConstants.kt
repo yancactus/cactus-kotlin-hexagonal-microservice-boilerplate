@@ -73,6 +73,7 @@ enum class StockUpdateReason(val template: String) {
 
 object EventTypes {
     const val USER_CREATED = "USER_CREATED"
+    const val PRODUCT_CREATED = "PRODUCT_CREATED"
     const val PRODUCT_STOCK_UPDATED = "PRODUCT_STOCK_UPDATED"
     const val ORDER_CREATED = "ORDER_CREATED"
     const val ORDER_STATUS_CHANGED = "ORDER_STATUS_CHANGED"

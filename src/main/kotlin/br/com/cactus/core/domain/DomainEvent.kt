@@ -18,6 +18,18 @@ data class UserCreatedEvent(
     override val eventType = "USER_CREATED"
 }
 
+data class ProductCreatedEvent(
+    override val eventId: String = UUID.randomUUID().toString(),
+    override val occurredAt: Instant = Instant.now(),
+    val productId: String,
+    val sku: String,
+    val name: String,
+    val price: java.math.BigDecimal,
+    val stock: Int
+) : DomainEvent {
+    override val eventType = "PRODUCT_CREATED"
+}
+
 data class ProductStockUpdatedEvent(
     override val eventId: String = UUID.randomUUID().toString(),
     override val occurredAt: Instant = Instant.now(),

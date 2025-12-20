@@ -116,7 +116,10 @@ class OrderExpirationScheduler(
                 val cancelledOrders = orderRepository.findAll(0, 1, OrderStatus.CANCELLED)
 
                 logger.info(
-                    "Daily Order Stats: " + "pending=${pendingOrders.totalElements}, " + "confirmed=${confirmedOrders.totalElements}, " + "completed=${completedOrders.totalElements}, " + "cancelled=${cancelledOrders.totalElements}"
+                    "Daily Order Stats: pending=${pendingOrders.totalElements}, " +
+                        "confirmed=${confirmedOrders.totalElements}, " +
+                        "completed=${completedOrders.totalElements}, " +
+                        "cancelled=${cancelledOrders.totalElements}"
                 )
             }
         } catch (e: Exception) {
