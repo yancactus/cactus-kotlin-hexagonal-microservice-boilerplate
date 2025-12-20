@@ -1,0 +1,173 @@
+spring:
+  application:
+    name: cactus-hexagonal-app
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5433}/${POSTGRES_DB:cactus_db}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DATABASE_POOL_SIZE:20}
+      minimum-idle: ${DATABASE_POOL_MIN_IDLE:5}
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: ${JPA_SHOW_SQL:false}
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
+
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_USER:root}:${MONGO_PASSWORD:root}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/${MONGO_DB:cactus_db}?authSource=admin
+
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000
+      # Lettuce pool configuration
+      lettuce:
+        pool:
+          max-active: ${REDIS_POOL_MAX_ACTIVE:16}
+          max-idle: ${REDIS_POOL_MAX_IDLE:8}
+          min-idle: ${REDIS_POOL_MIN_IDLE:4}
+      cluster:
+        enabled: ${REDIS_CLUSTER_ENABLED:false}
+        nodes: ${REDIS_CLUSTER_NODES:}
+        max-redirects: ${REDIS_CLUSTER_MAX_REDIRECTS:3}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+    consumer:
+      group-id: ${KAFKA_GROUP_ID:cactus-group}
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  servlet:
+    context-path: ${CONTEXT_PATH:/}
+
+kafka:
+  topics:
+    domain-events: domain-events
+  consumer:
+    group-id: cactus-group
+
+rabbitmq:
+  exchange:
+    domain-events: domain-events-exchange
+  queue:
+    domain-events: domain-events-queue
+    dlq: domain-events-dlq
+
+messaging:
+  publish-to-kafka: ${PUBLISH_TO_KAFKA:true}
+  publish-to-rabbitmq: ${PUBLISH_TO_RABBITMQ:true}
+
+feign:
+  connection-timeout: ${FEIGN_CONNECTION_TIMEOUT:5000}
+  read-timeout: ${FEIGN_READ_TIMEOUT:10000}
+  retry:
+    max-attempts: ${FEIGN_RETRY_MAX_ATTEMPTS:3}
+    period: ${FEIGN_RETRY_PERIOD:1000}
+    max-period: ${FEIGN_RETRY_MAX_PERIOD:5000}
+  clients:
+    brasil-api:
+      url: ${BRASIL_API_URL:https://brasilapi.com.br/api}
+
+order:
+  expiration:
+    enabled: ${ORDER_EXPIRATION_ENABLED:true}
+    pending-hours: ${ORDER_EXPIRATION_PENDING_HOURS:24}
+    batch-size: ${ORDER_EXPIRATION_BATCH_SIZE:100}
+    cron: ${ORDER_EXPIRATION_CRON:0 0 * * * *}
+  stats:
+    cron: ${ORDER_STATS_CRON:0 0 2 * * *}
+
+otel:
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+  service:
+    name: ${OTEL_SERVICE_NAME:cactus-hexagonal-app}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,scheduledtasks
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+
+app:
+  name: ${spring.application.name}
+  version: 1.0.0
+  cors:
+    allowed-origins:
+      - "*"
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - "*"
+    max-age: 3600
+
+logging:
+  level:
+    root: INFO
+    br.com.cactus: ${LOG_LEVEL:DEBUG}
+    org.springframework.web: INFO
+    org.springframework.kafka: WARN
+    org.springframework.amqp: WARN
+    org.hibernate.SQL: ${HIBERNATE_LOG_LEVEL:DEBUG}
+    org.hibernate.type.descriptor.sql: TRACE
+    # feign logging
+    feign: ${FEIGN_LOG_LEVEL:DEBUG}
+    # shedlock logging
+    net.javacrumbs.shedlock: INFO

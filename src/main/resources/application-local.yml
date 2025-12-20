@@ -1,0 +1,14 @@
+spring:
+  h2:
+    console:
+      enabled: true
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop
+
+logging:
+  level:
+    br.com.cactus: DEBUG
+    org.hibernate.SQL: DEBUG

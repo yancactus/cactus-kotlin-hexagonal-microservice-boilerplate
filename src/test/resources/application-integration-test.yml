@@ -1,0 +1,25 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  data:
+    mongodb:
+      enabled: true
+    redis:
+      enabled: true
+
+  kafka:
+    enabled: true
+    consumer:
+      auto-offset-reset: earliest
+
+  rabbitmq:
+    enabled: true
+
+logging:
+  level:
+    root: WARN
+    br.com.cactus: DEBUG
+    org.testcontainers: INFO

@@ -1,0 +1,18 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
+
+messaging:
+  publish-to-kafka: false
+  publish-to-rabbitmq: false
+
+logging:
+  level:
+    root: WARN
+    br.com.cactus: DEBUG

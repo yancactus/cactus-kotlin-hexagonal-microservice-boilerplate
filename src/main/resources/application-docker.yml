@@ -1,0 +1,66 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/kotlin_boilerplate
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  data:
+    mongodb:
+      enabled: true
+      uri: mongodb://mongo:mongo@mongodb:27017/kotlin_boilerplate?authSource=admin
+    redis:
+      enabled: true
+      host: redis
+      port: 6379
+
+  kafka:
+    enabled: true
+    bootstrap-servers: kafka:29092
+    consumer:
+      group-id: kotlin-boilerplate-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    producer:
+      acks: all
+      retries: 3
+
+  rabbitmq:
+    enabled: true
+    host: rabbitmq
+    port: 5672
+    username: rabbitmq
+    password: rabbitmq
+
+  redisson:
+    config: |
+      singleServerConfig:
+        address: "redis://redis:6379"
+
+otel:
+  exporter:
+    otlp:
+      endpoint: http://jaeger:4317
+  service:
+    name: kotlin-boilerplate
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  level:
+    root: INFO
+    br.com.cactus: INFO
